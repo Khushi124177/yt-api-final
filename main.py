@@ -7,10 +7,11 @@ import google.generativeai as genai
 
 app = FastAPI()
 
+# ✅ Proper CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,   # IMPORTANT change
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -21,6 +22,10 @@ class RequestBody(BaseModel):
     video_url: str
     topic: str
 
+@app.options("/ask")
+async def options_ask():
+    return {"message": "OK"}
+
 @app.post("/ask")
 async def ask(body: RequestBody):
     model = genai.GenerativeModel("gemini-1.5-pro")
@@ -30,7 +35,6 @@ async def ask(body: RequestBody):
     {body.video_url}
 
     Find when the topic "{body.topic}" is first spoken.
-
     Return ONLY timestamp in HH:MM:SS format.
     """
 
