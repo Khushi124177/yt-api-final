@@ -1,14 +1,21 @@
 import os
 import re
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from dotenv import load_dotenv
 import google.generativeai as genai
 
-load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 class RequestBody(BaseModel):
     video_url: str
@@ -16,7 +23,6 @@ class RequestBody(BaseModel):
 
 @app.post("/ask")
 async def ask(body: RequestBody):
-
     model = genai.GenerativeModel("gemini-1.5-pro")
 
     prompt = f"""
@@ -26,7 +32,6 @@ async def ask(body: RequestBody):
     Find when the topic "{body.topic}" is first spoken.
 
     Return ONLY timestamp in HH:MM:SS format.
-    Example: 00:05:47
     """
 
     response = model.generate_content(
@@ -34,7 +39,7 @@ async def ask(body: RequestBody):
         generation_config={"temperature": 0}
     )
 
-    match = re.search(r"\d{{2}}:\d{{2}}:\d{{2}}", response.text)
+    match = re.search(r"\d{2}:\d{2}:\d{2}", response.text)
     timestamp = match.group(0) if match else "00:00:00"
 
     return {
